@@ -26,11 +26,11 @@ func manejarAumento(n int32, puerto string) {
 	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
 
 	if err != nil {
-		log.Fatal("Proceso Manejar Contador: Error de conexión: ", err)
+		log.Fatal("Procedimiento Manejar Contador: Error de conexión: ", err)
 	}
 
 	client.Call("API.Aumentar", n, &resp)
-	fmt.Printf("Proceso Manejar Contador: Hice una llamada para aumentar y devolvió %d \n", resp)
+	fmt.Printf("Procedimiento Manejar Contador: Hice una llamada para aumentar y devolvió %d \n", resp)
 	client.Close()
 
 }
@@ -41,11 +41,11 @@ func manejarValor(puerto string) {
 	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
 
 	if err != nil {
-		log.Fatal("Error de conexión: ", err)
+		log.Fatal("Procedimiento Manejar Contador: Error de conexión: ", err)
 	}
 
 	client.Call("API.Valor", 0, &resp)
-	fmt.Printf("Proceso Manejar Contador: El valor actual es: %d \n", resp)
+	fmt.Printf("Procedimiento Manejar Contador: El valor actual es: %d \n", resp)
 	client.Close()
 }
 
@@ -55,11 +55,11 @@ func manejarReseteo(puerto string) {
 	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
 
 	if err != nil {
-		log.Fatal("Error de conexión", err)
+		log.Fatal("Procedimiento Manejar Contador: Error de conexión", err)
 	}
 
 	client.Call("API.Reset", 0, &resp)
-	fmt.Printf("Proceso Manejar Contador: Contador reseteado. Valor actual: %d \n", resp)
+	fmt.Printf("Procedimiento Manejar Contador: Contador reseteado. Valor actual: %d \n", resp)
 	client.Close()
 }
 
