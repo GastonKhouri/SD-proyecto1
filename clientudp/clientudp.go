@@ -3,10 +3,10 @@
 package main
 
 import (
+	"fcont"
 	"fmt"
 	"log"
 	"net"
-	"strconv"
 )
 
 func main() {
@@ -15,7 +15,6 @@ func main() {
 	// port := "9000"
 
 	//Declarar y pedir el numero que se enviara
-	var entrada string
 
 	ip := "localhost"
 	puerto := "2002"
@@ -29,22 +28,7 @@ func main() {
 	for {
 
 		//Pedir entrada hasta que se ingrese un entero o 'r'
-		for {
-			fmt.Scanln(&entrada)
-
-			if _, err := strconv.Atoi(entrada); err != nil {
-				//No es un int, revisa si es reset
-				if entrada == "r" {
-					//Es un reset
-					break
-				} else {
-					fmt.Println("Ingrese un numero entero o 'r'")
-				}
-			} else {
-				// Es un int
-				break
-			}
-		}
+		entrada := fcont.ChequearEntrada()
 
 		//Llamar al servidor
 		conn, err := net.DialUDP("udp4", nil, udpAddr)

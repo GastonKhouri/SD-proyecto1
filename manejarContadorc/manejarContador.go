@@ -8,6 +8,9 @@ import (
 	"net/rpc"
 	"os"
 	"strconv"
+
+	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/process"
 )
 
 //Tipo necesario para hacer los rpc
@@ -80,10 +83,31 @@ func main() {
 		} else {
 			manejarAumento(num, puertorpc)
 		}
-	} else {
-		//Hubo error convirtiendo por lo tanto es 'r'
-
+	} else if entrada == "r" {
+		// Hubo error convirtiendo por lo tanto es 'r'
 		manejarReseteo(puertorpc)
+	} else if entrada == "p" {
+		// // Llamada a jobs
+		// manContCmd := exec.Command("echo", "heyy")
+		// log.Println(fmt.Sprintf("Consola Local: Mostrando procesos activos."))
+
+		// manContOut, err := manContCmd.Output()
+		// if err != nil {
+		// 	log.Println("Consola Local: Error en comando: ", err)
+		// }
+
+		// log.Println(manContOut)
+		miscStat, _ := load.Misc()
+		log.Printf("No. procesos corriendo: %d\n", miscStat.ProcsRunning)
+		procesos, _ := process.Processes()
+
+		for _, v := range procesos {
+			name, _ := v.Name()
+			log.Printf("%s", name)
+		}
+
+	} else {
+		log.Println("Ingreso una entrada invalida.")
 	}
 
 }

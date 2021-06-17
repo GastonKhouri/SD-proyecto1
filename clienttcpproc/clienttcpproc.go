@@ -6,10 +6,10 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/gob"
+	"fcont"
 	"fmt"
 	"log"
 	"net"
-	"strconv"
 )
 
 func main() {
@@ -17,30 +17,13 @@ func main() {
 	ip := "localhost"
 	port := "2002"
 
-	//Declarar y pedir el numero que se enviara
-	var entrada string
 	// var num int32
 	buf := new(bytes.Buffer)
 
 	for {
 
 		//Pedir entrada hasta que se ingrese un entero o 'r'
-		for {
-			fmt.Scanln(&entrada)
-
-			if _, err := strconv.Atoi(entrada); err != nil {
-				//No es un int, revisa si es reset
-				if entrada == "r" {
-					//Es un reset
-					break
-				} else {
-					fmt.Println("Ingrese un numero entero o 'r'")
-				}
-			} else {
-				// Es un int
-				break
-			}
-		}
+		entrada := fcont.ChequearEntrada()
 
 		//Encodear la entrada valida
 		enc := gob.NewEncoder(buf)
