@@ -3,12 +3,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net"
 	"net/rpc"
-	"strconv"
 )
 
 //Tipo necesario para hacer los rpc
@@ -20,44 +21,56 @@ var puertoudp string
 var puertorpc string
 
 //Funcion para manejar conexiones udp
-func handleUDPConnection(conn *net.UDPConn) {
+func handleUDPConnection(conne *net.UDPConn) {
+
+	port := "9000"
 
 	buffer := make([]byte, 1024)
+	buf := new(bytes.Buffer)
 
-	n, addr, err := conn.ReadFromUDP(buffer)
+	n, addr, err := conne.ReadFromUDP(buffer)
 	if err != nil {
 		log.Println("Server UDP: Error en readfromudp: ", err)
 	}
 
 	entrada := bytes.NewBuffer(buffer[:n]).String()
 
-	var num int32
+	// Codificar entrada de nuevo
 
-	puertorpc := "9001"
-	var resp string
-
-	//Intenta convertir la entrada a int, si no puede, la entrada es r entonces resetea
-	if x, err := strconv.Atoi(entrada); err == nil {
-		//No hubo error convirtiendo porque es int
-		num = int32(x)
-		if num == 0 {
-			manejarValor(conn, puertorpc, &resp)
-		} else {
-			manejarAumento(conn, num, puertorpc, &resp)
-		}
-	} else {
-		//Hubo error convirtiendo por lo tanto es 'r'
-		manejarReseteo(conn, puertorpc, &resp)
+	enc := gob.NewEncoder(buf)
+	if err := enc.Encode(entrada); err != nil {
+		log.Println("Server UDP: Error codificando entrada: ", err)
 	}
 
-	_, err = conn.WriteToUDP([]byte(resp), addr)
+	//Llamar a la cola
+	log.Println("Server UDP: Llamado a cola en:", ip+":"+port)
+	conns, err := net.Dial("tcp", ip+":"+port)
+	if err != nil {
+		log.Println("Server UDP: Error en dial: ", err)
+	}
+
+	defer conns.Close()
+
+	// Escribir a la cola
+	buf.WriteTo(conns)
+
+	//Lee la conexion y la imprime
+	resp, err := bufio.NewReader(conns).ReadString('\n')
+	if err != nil {
+		fmt.Println("Server UDP: Error leyendo la conexión de regreso", err)
+	}
+	log.Println("Server UDP: Recibido: ", string(resp))
+
+	//Bien hasta aca
+
+	_, err = conne.WriteToUDP([]byte(resp), addr)
 	if err != nil {
 		log.Println("Error escribiendo al cliente: ", err)
 	}
 
 }
 
-//Funciones para llamar los RPC
+//Funcion para mandar a cola
 func manejarAumento(conn net.Conn, n int32, puerto string, respuesta *string) {
 
 	var resp Int
@@ -74,36 +87,6 @@ func manejarAumento(conn net.Conn, n int32, puerto string, respuesta *string) {
 
 	client.Close()
 
-}
-
-func manejarValor(conn net.Conn, puerto string, respuesta *string) {
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Server UDP: Error de conexión: ", err)
-	}
-
-	client.Call("API.Valor", 0, &resp)
-	log.Println(fmt.Sprintf("Server UDP: El valor actual es: %d\n", resp))
-	*respuesta = fmt.Sprintf("El valor actual es: %d \n", resp)
-	client.Close()
-}
-
-func manejarReseteo(conn net.Conn, puerto string, respuesta *string) {
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Server UDP: Error de conexión", err)
-	}
-
-	client.Call("API.Reset", 0, &resp)
-	log.Println(fmt.Sprintf("Server UDP: Contador reseteado. Valor actual: %d\n", resp))
-	*respuesta = fmt.Sprintf("Contador reseteado. Valor actual: %d \n", resp)
-	client.Close()
 }
 
 func main() {

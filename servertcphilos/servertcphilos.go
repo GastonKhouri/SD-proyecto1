@@ -3,13 +3,14 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/gob"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/rpc"
-	"strconv"
 )
 
 //Tipo necesario para hacer los rpc
@@ -72,7 +73,7 @@ func main() {
 
 	ip := "localhost"
 	puertotcp := "2020"
-	puertorpc := "9001"
+	puertosalida := "9000"
 
 	//Escuchar un request
 	ln, err := net.Listen("tcp", ip+":"+puertotcp)
@@ -82,12 +83,12 @@ func main() {
 
 	//Asegura que se cierre cuando termine la conexion
 	defer ln.Close()
-	var num int32
 	var entrada string
+	buf := new(bytes.Buffer)
 
 	for {
 		//Recibir un request
-		conn, err := ln.Accept()
+		conne, err := ln.Accept()
 		if err != nil {
 			log.Println("Server TCP Hilos: Error en server accept", err)
 		} else {
@@ -95,23 +96,54 @@ func main() {
 		}
 
 		//Recibe la entrada como un string
-		dec := gob.NewDecoder(conn)
+		dec := gob.NewDecoder(conne)
 		if err = dec.Decode(&entrada); err != nil {
 			log.Println("Server TCP Hilos: Error decodificando: ", err)
 		}
 
-		//Intenta convertir la entrada a int, si no puede, la entrada es r entonces resetea
-		if x, err := strconv.Atoi(entrada); err == nil {
-			//No hubo error convirtiendo porque es int
-			num = int32(x)
-			if num == 0 {
-				go manejarValor(conn, puertorpc)
-			} else {
-				go manejarAumento(conn, num, puertorpc)
-			}
-		} else {
-			//Hubo error convirtiendo por lo tanto es 'r'
-			go manejarReseteo(conn, puertorpc)
+		//Comienza conexion con cola
+
+		// Codificar entrada de nuevo
+		enc := gob.NewEncoder(buf)
+		if err := enc.Encode(entrada); err != nil {
+			log.Println("Server TCP Hilos: Error codificando entrada: ", err)
 		}
+
+		//Llamar a la cola
+		log.Println("Server TCP Hilos: Llamado a cola en:", ip+":"+puertosalida)
+		conns, err := net.Dial("tcp", ip+":"+puertosalida)
+		if err != nil {
+			log.Println("Server TCP Hilos: Error en dial: ", err)
+		}
+
+		defer conns.Close()
+
+		// Escribir a la cola
+		buf.WriteTo(conns)
+
+		//Lee la conexion y la imprime
+		resp, err := bufio.NewReader(conns).ReadString('\n')
+		if err != nil {
+			fmt.Println("Server TCP Hilos: Error leyendo la conexión de regreso", err)
+		}
+		log.Println("Server TCP Hilos: Recibido: ", string(resp))
+
+		io.WriteString(conne, fmt.Sprintf(resp))
+
+		// Termina conexion con cola
+
+		// //Intenta convertir la entrada a int, si no puede, la entrada es r entonces resetea
+		// if x, err := strconv.Atoi(entrada); err == nil {
+		// 	//No hubo error convirtiendo porque es int
+		// 	num = int32(x)
+		// 	if num == 0 {
+		// 		go manejarValor(conn, puertorpc)
+		// 	} else {
+		// 		go manejarAumento(conn, num, puertorpc)
+		// 	}
+		// } else {
+		// 	//Hubo error convirtiendo por lo tanto es 'r'
+		// 	go manejarReseteo(conn, puertorpc)
+		// }
 	}
 }
