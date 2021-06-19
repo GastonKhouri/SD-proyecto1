@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/rpc"
 	"os/exec"
+	"strings"
 )
 
 //Tipo necesario para hacer los rpc
@@ -78,7 +79,9 @@ func main() {
 		}
 
 		//Imprimir el resulatdo
-		log.Println(string(manContOut))
+		resp := string(manContOut)
+		resp = strings.Replace(resp, "/", "\n", -1)
+		log.Println(resp)
 
 	}
 

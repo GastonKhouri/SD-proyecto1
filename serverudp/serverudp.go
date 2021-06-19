@@ -35,8 +35,9 @@ func handleUDPConnection(conne *net.UDPConn) {
 
 	entrada := bytes.NewBuffer(buffer[:n]).String()
 
-	// Codificar entrada de nuevo
+	//Aqui comienza la llamada a la cola
 
+	// Codificar entrada de nuevo
 	enc := gob.NewEncoder(buf)
 	if err := enc.Encode(entrada); err != nil {
 		log.Println("Server UDP: Error codificando entrada: ", err)
@@ -61,7 +62,7 @@ func handleUDPConnection(conne *net.UDPConn) {
 	}
 	log.Println("Server UDP: Recibido: ", string(resp))
 
-	//Bien hasta aca
+	//Aqui termina la conexion a la cola
 
 	_, err = conne.WriteToUDP([]byte(resp), addr)
 	if err != nil {

@@ -116,8 +116,6 @@ func main() {
 			log.Println("Server TCP Hilos: Error en dial: ", err)
 		}
 
-		defer conns.Close()
-
 		// Escribir a la cola
 		buf.WriteTo(conns)
 
@@ -128,22 +126,7 @@ func main() {
 		}
 		log.Println("Server TCP Hilos: Recibido: ", string(resp))
 
+		// Devuelve la respuesta de parte de la cola hacia el cliente
 		io.WriteString(conne, fmt.Sprintf(resp))
-
-		// Termina conexion con cola
-
-		// //Intenta convertir la entrada a int, si no puede, la entrada es r entonces resetea
-		// if x, err := strconv.Atoi(entrada); err == nil {
-		// 	//No hubo error convirtiendo porque es int
-		// 	num = int32(x)
-		// 	if num == 0 {
-		// 		go manejarValor(conn, puertorpc)
-		// 	} else {
-		// 		go manejarAumento(conn, num, puertorpc)
-		// 	}
-		// } else {
-		// 	//Hubo error convirtiendo por lo tanto es 'r'
-		// 	go manejarReseteo(conn, puertorpc)
-		// }
 	}
 }

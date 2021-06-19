@@ -7,14 +7,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 )
 
 func main() {
-
-	// ip := "localhost"
-	// port := "9000"
-
-	//Declarar y pedir el numero que se enviara
 
 	ip := "localhost"
 	puerto := "2002"
@@ -49,6 +45,8 @@ func main() {
 		buffer := make([]byte, 1024)
 		n, addr, err := conn.ReadFromUDP(buffer)
 		log.Print(fmt.Sprintln("Cliente UDP: Direccion remota leida: ", addr))
-		log.Print(fmt.Sprintln("Cliente UDP: Recibido: ", string(buffer[:n])))
+		resp := string(buffer[:n])
+		resp = strings.Replace(resp, "/", "\n", -1)
+		log.Print(fmt.Sprintln("Cliente UDP: Recibido: ", resp))
 	}
 }

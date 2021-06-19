@@ -1,141 +1,210 @@
-// package main
+package main
 
-// import (
-// 	"fmt"
-// 	"log"
-// 	"net"
-// 	"net/http"
-// 	"net/rpc"
-// 	"strconv"
-// )
+import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"net/rpc"
+	"strconv"
 
-// func (a *API) AgregarACola(n String, resp *String) error {
-// 	log.Printf("Cola: Ejecutando procedimiento agregarACola con: %s\n", n)
-// 	cola = append(cola, string(n))
-// 	*resp = n
+	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/process"
+)
 
-// 	return nil
-// }
+type solicitud struct {
+	num  string
+	conn net.Conn
+}
 
-// func dequeue() string {
-// 	element := cola[0]
-// 	cola = cola[:1]
-// 	return element
-// }
+func aceptarRequest(p chan (bool), canalConexion chan (net.Conn), ln net.Listener) {
 
-// //Tipo necesario para hacer los rpc
-// type String string
-// type Int int
-// type API int
+	var entrada string
+	defer ln.Close()
 
-// var cola []string
-// var puertoentrada string
-// var puertosalida string
-// var ip string
+	for {
 
-// func main() {
+		//Recibir un request
+		conn, err := ln.Accept()
+		if err != nil {
+			log.Println("Cola: Error en server accept", err)
+		} else {
+			log.Println("Cola: Conexión aceptada")
+		}
 
-// 	var num int32
-// 	puertoentrada = "9000"
-// 	puertosalida = "9001"
-// 	ip = "localhost"
-// 	var resp string
-// 	var api = new(API)
-// 	err := rpc.Register(api)
-// 	if err != nil {
-// 		log.Println("Cola: Error en registrar api: ", err)
-// 	}
+		// canalConexion <- conn
 
-// 	//Recibir numero de parte de los servidores
-// 	rpc.HandleHTTP()
+		//Decodificar el request para agregarlo a la cola como string
+		dec := gob.NewDecoder(conn)
+		if err = dec.Decode(&entrada); err != nil {
+			log.Println("Cola: Error decodificando: ", err)
+		}
 
-// 	//Escuchar
-// 	ls, err := net.Listen("tcp", ip+":"+puertoentrada)
-// 	if err != nil {
-// 		log.Println("Cola: Error escuchando (listen): ", err)
-// 	}
+		agregarACola(&solicitud{entrada, conn}) //Agregando a cola
+	}
+}
 
-// 	//Sirviendo
-// 	log.Printf("Cola: sirviendo RPC en puerto %s", puertoentrada)
-// 	err = http.Serve(ls, nil)
-// 	if err != nil {
-// 		log.Fatal("Counter: error sirviendo: ", err)
-// 	}
+func enviarReqAContador(p chan (bool), canalConexion chan (net.Conn), puertorpc string) {
+	for {
+		// time.Sleep(time.Second * 2)
+		if len(cola) != 0 {
+			// fmt.Println("----- COLA ACTUAL -----")
+			// for i := 0; i < len(cola); i++ {
+			// 	fmt.Printf("Addr: %s - Entrada: %s\n", cola[i].conn.LocalAddr(), cola[i].num)
+			// }
+			llamarRPC(puertorpc)
+		}
+	}
+}
 
-// 	//Envio al contador para ejecutar el siguiente numero
-// 	for {
-// 		//Se saca el primer elemento
-// 		entrada := dequeue()
+func llamarRPC(ps string) {
+	var num int32
 
-// 		//Intenta convertir la entrada a int, si no puede, la entrada es r entonces resetea
-// 		if x, err := strconv.Atoi(entrada); err == nil {
-// 			//No hubo error convirtiendo porque es int
-// 			num = int32(x)
-// 			if num == 0 {
-// 				manejarValor(puertosalida, &resp)
-// 				log.Println("Se manejo valor en cola")
-// 			} else {
-// 				manejarAumento(num, puertosalida, &resp)
-// 				log.Println("Se manejo aumento en cola")
-// 			}
-// 		} else {
-// 			//Hubo error convirtiendo por lo tanto es 'r'
-// 			manejarReseteo(puertosalida, &resp)
-// 			log.Println("Se manejo reseteo en cola")
-// 		}
-// 		if &resp != nil {
-// 			log.Println("XXX LOOP")
-// 			continue
-// 		}
-// 	}
+	//Se saca el primer elemento
+	entrada, conn := dequeue()
 
-// }
+	//Intenta convertir la entrada a int, si no puede, la entrada es r entonces resetea
+	if x, err := strconv.Atoi(entrada); err == nil {
+		//No hubo error convirtiendo porque es int
+		num = int32(x)
+		if num == 0 {
+			manejarValor(conn, ps)
+		} else {
+			manejarAumento(conn, num, ps)
+		}
+	} else if entrada == "r" {
+		//Hubo error convirtiendo por lo tanto es 'r'
+		manejarReseteo(conn, ps)
+	} else if entrada == "p" {
 
-// //Funciones para llamar los RPC
-// func manejarAumento(n int32, puerto string, respuesta *string) {
+		//Lista de procesos para filtrar
+		listaDeProcesos := ([]string{"counter", "colatcp", "manejarContador", "servertcphilos", "servertcpproc", "serverudp",
+			"clientudp", "clienttcpproc", "clienttcphilos"})
 
-// 	var resp Int
+		miscStat, _ := load.Misc()
+		log.Printf("No. procesos corriendo: %d\n", miscStat.ProcsRunning)
+		procesos, _ := process.Processes()
 
-// 	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
+		resp := new(bytes.Buffer)
 
-// 	if err != nil {
-// 		log.Fatal("Error de conexión: ", err)
-// 	}
+		for _, v := range procesos {
+			name, _ := v.Name()
+			pid, _ := v.Ppid()
+			if stringInSlice(name, listaDeProcesos) {
+				resp.WriteString("/PID: " + strconv.Itoa(int(pid)) + " - Nombre: " + name)
+			}
+		}
+		resp.WriteString("\n")
 
-// 	client.Call("API.Aumentar", n, &resp)
-// 	log.Println(fmt.Sprintf("Cola: Hice una llamada para aumentar y devolvió %d\n", resp)) //Log
-// 	*respuesta = fmt.Sprintf("Hice una llamada para aumentar y devolvió %d \n", resp)      //Respuesta que ira al servidor
+		fmt.Println("La cola mando esto:", resp)
+		io.WriteString(conn, fmt.Sprintf("Los procesos corriendo son: %s", resp))
 
-// 	client.Close()
+	} else {
+		log.Println("Ingreso una entrada invalida.")
+	}
+}
 
-// }
+func agregarACola(i *solicitud) {
+	cola = append(cola, *i)
+	log.Println("Cola: Agregado a cola: ", *i)
 
-// func manejarValor(puerto string, respuesta *string) {
-// 	var resp Int
+}
 
-// 	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
+func dequeue() (string, net.Conn) {
+	element := cola[0]
+	cola = cola[1:]
+	return element.num, element.conn
+}
 
-// 	if err != nil {
-// 		log.Fatal("Server UDP: Error de conexión: ", err)
-// 	}
+func stringInSlice(s string, a []string) bool {
+	for _, b := range a {
+		if b == s {
+			return true
+		}
+	}
+	return false
+}
 
-// 	client.Call("API.Valor", 0, &resp)
-// 	log.Println(fmt.Sprintf("Server UDP: El valor actual es: %d\n", resp))
-// 	*respuesta = fmt.Sprintf("El valor actual es: %d \n", resp)
-// 	client.Close()
-// }
+//Tipo necesario para hacer los rpc
+type Int int
+type API int
 
-// func manejarReseteo(puerto string, respuesta *string) {
-// 	var resp Int
+var cola []solicitud
+var puertoentrada string
+var puertosalida string
+var ip string
+var permiso chan (bool) //Canal permiso
+var cc chan (net.Conn)  //Canal conexion
 
-// 	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
+func main() {
 
-// 	if err != nil {
-// 		log.Fatal("Server UDP: Error de conexión", err)
-// 	}
+	puertoentrada = "9000"
+	puertosalida = "9001"
+	ip = "localhost"
+	// buf := new(bytes.Buffer)
 
-// 	client.Call("API.Reset", 0, &resp)
-// 	log.Println(fmt.Sprintf("Server UDP: Contador reseteado. Valor actual: %d\n", resp))
-// 	*respuesta = fmt.Sprintf("Contador reseteado. Valor actual: %d \n", resp)
-// 	client.Close()
-// }
+	//Escuchar un request
+	ln, err := net.Listen("tcp", ip+":"+puertoentrada)
+	if err != nil {
+		log.Println("Cola: Error en server listen: ", err)
+	} else {
+		log.Println("Escuchando en puerto ", puertoentrada)
+	}
+
+	// Recibir a la cola
+	go aceptarRequest(permiso, cc, ln)
+	// Mandar de la cola al contador
+	enviarReqAContador(permiso, cc, puertosalida)
+
+	log.Println("Final de cola")
+}
+
+//Funciones para llamar los RPC
+func manejarAumento(conn net.Conn, n int32, puerto string) {
+
+	var resp Int
+
+	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
+
+	if err != nil {
+		log.Fatal("Error de conexión: ", err)
+	}
+
+	client.Call("API.Aumentar", n, &resp)
+	log.Printf(fmt.Sprintf("Cola: Hice una llamada para aumentar y devolvió %d\n", resp))
+	io.WriteString(conn, fmt.Sprintf("Hice una llamada para aumentar y devolvió %d \n", resp))
+	client.Close()
+
+}
+
+func manejarValor(conn net.Conn, puerto string) {
+	var resp Int
+
+	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
+
+	if err != nil {
+		log.Fatal("Cola: Error de conexión: ", err)
+	}
+
+	client.Call("API.Valor", 0, &resp)
+	log.Printf(fmt.Sprintf("Cola: El valor actual es: %d\n", resp))
+	io.WriteString(conn, fmt.Sprintf("Hice una llamada para valor y devolvió %d \n", resp))
+	client.Close()
+}
+
+func manejarReseteo(conn net.Conn, puerto string) {
+	var resp Int
+
+	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
+
+	if err != nil {
+		log.Fatal("Cola: Error de conexión", err)
+	}
+
+	client.Call("API.Reset", 0, &resp)
+	log.Printf(fmt.Sprintf("Cola: Contador reseteado. Valor actual: %d\n", resp))
+	io.WriteString(conn, fmt.Sprintf("Hice una llamada para resetear y devolvió %d \n", resp))
+	client.Close()
+}

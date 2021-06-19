@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 )
 
 func main() {
@@ -17,7 +18,6 @@ func main() {
 	ip := "localhost"
 	port := "2002"
 
-	// var num int32
 	buf := new(bytes.Buffer)
 
 	for {
@@ -49,6 +49,7 @@ func main() {
 		if err != nil {
 			fmt.Println("Cliente TCP: Error leyendo la conexión de regreso", err)
 		}
+		resp = strings.Replace(resp, "/", "\n", -1)
 		log.Println("Cliente TCP Proc: Recibido: ", string(resp))
 	}
 }

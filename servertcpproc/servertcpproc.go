@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"net/rpc"
 	"os/exec"
 )
 
@@ -18,48 +17,6 @@ type Int int
 var ip string
 var puertotcp string
 var puertorpc string
-
-//Funciones para llamar los RPC
-func manejarAumento(conn net.Conn, n int32, puerto string) {
-
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Error de conexión: ", err)
-	}
-
-	client.Call("API.Aumentar", n, &resp)
-	client.Close()
-
-}
-
-func manejarValor(conn net.Conn, puerto string) {
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Error de conexión: ", err)
-	}
-
-	client.Call("API.Valor", 0, &resp)
-	client.Close()
-}
-
-func manejarReseteo(conn net.Conn, puerto string) {
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Error de conexión", err)
-	}
-
-	client.Call("API.Reset", 0, &resp)
-	client.Close()
-}
 
 func main() {
 
@@ -101,7 +58,7 @@ func main() {
 		manContOut, err := manContCmd.Output()
 		if err != nil {
 			log.Println("Server TCP Proc: Error en comando: ", err)
-		}
+		} //Funciona el output puesto en manContOut
 
 		//Escribir a la conexión la respuesta del proceso ejecutado
 		io.WriteString(conn, fmt.Sprintf(string(manContOut)))

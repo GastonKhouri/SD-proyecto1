@@ -3,14 +3,14 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/gob"
 	"fmt"
+	"io"
 	"log"
-	"net/rpc"
+	"net"
 	"os"
-	"strconv"
-
-	"github.com/shirou/gopsutil/load"
-	"github.com/shirou/gopsutil/process"
 )
 
 //Tipo necesario para hacer los rpc
@@ -21,93 +21,46 @@ var ip string
 var puertotcp string
 var puertorpc string
 
-//Funciones para llamar los RPC
-func manejarAumento(n int32, puerto string) {
-
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Procedimiento Manejar Contador: Error de conexión: ", err)
-	}
-
-	client.Call("API.Aumentar", n, &resp)
-	fmt.Printf("Procedimiento Manejar Contador: Hice una llamada para aumentar y devolvió %d \n", resp)
-	client.Close()
-
-}
-
-func manejarValor(puerto string) {
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Procedimiento Manejar Contador: Error de conexión: ", err)
-	}
-
-	client.Call("API.Valor", 0, &resp)
-	fmt.Printf("Procedimiento Manejar Contador: El valor actual es: %d \n", resp)
-	client.Close()
-}
-
-func manejarReseteo(puerto string) {
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Procedimiento Manejar Contador: Error de conexión", err)
-	}
-
-	client.Call("API.Reset", 0, &resp)
-	fmt.Printf("Procedimiento Manejar Contador: Contador reseteado. Valor actual: %d \n", resp)
-	client.Close()
-}
-
 func main() {
 
-	puertorpc := "9001"
-	var num int32
+	puertocola := "9000"
+	buf := new(bytes.Buffer)
 
 	//Ingresa el argumento a "entrada"
 	entrada := os.Args[1]
 
-	//Intenta convertir la entrada a int, si no puede, la entrada es r entonces resetea
-	if x, err := strconv.Atoi(entrada); err == nil {
-		//No hubo error convirtiendo porque es int
-		num = int32(x)
-		if num == 0 {
-			manejarValor(puertorpc)
-		} else {
-			manejarAumento(num, puertorpc)
-		}
-	} else if entrada == "r" {
-		// Hubo error convirtiendo por lo tanto es 'r'
-		manejarReseteo(puertorpc)
-	} else if entrada == "p" {
-		// // Llamada a jobs
-		// manContCmd := exec.Command("echo", "heyy")
-		// log.Println(fmt.Sprintf("Consola Local: Mostrando procesos activos."))
+	//Aqui comienza la llamada a la cola
 
-		// manContOut, err := manContCmd.Output()
-		// if err != nil {
-		// 	log.Println("Consola Local: Error en comando: ", err)
-		// }
-
-		// log.Println(manContOut)
-		miscStat, _ := load.Misc()
-		log.Printf("No. procesos corriendo: %d\n", miscStat.ProcsRunning)
-		procesos, _ := process.Processes()
-
-		for _, v := range procesos {
-			name, _ := v.Name()
-			log.Printf("%s", name)
-		}
-
-	} else {
-		log.Println("Ingreso una entrada invalida.")
+	// Codificar entrada de nuevo
+	enc := gob.NewEncoder(buf)
+	if err := enc.Encode(entrada); err != nil {
+		log.Println("manejarContador: Error codificando entrada: ", err)
 	}
+
+	log.Println("manejarContador: Codificacion exitosa")
+
+	//Llamar a la cola
+	log.Println("manejarContador: Llamado a cola en:", ip+":"+puertocola)
+	conn, err := net.Dial("tcp", ip+":"+puertocola)
+	if err != nil {
+		log.Println("manejarContador: Error en dial: ", err)
+	}
+
+	defer conn.Close()
+
+	// Escribir a la cola
+	buf.WriteTo(conn)
+	log.Printf("manejarContador: Buf escrito a cola")
+
+	//Lee la conexion y la imprime
+	resp, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		fmt.Println("manejarContador: Error leyendo la conexión de regreso", err)
+	} else {
+		log.Printf("manejarContado: Leida la respuesta de conexion a cola con exito.")
+	}
+	fmt.Println(string(resp)) //Salida de manejarContador
+
+	io.WriteString(conn, fmt.Sprintf(resp))
 
 }
