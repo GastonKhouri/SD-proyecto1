@@ -1,30 +1,17 @@
-// Contador global, puerto 9001
-
-package main
+package rpcserver
 
 import (
+	"cont"
 	"log"
 	"net"
 	"net/http"
 	"net/rpc"
-	"sync"
 )
 
-type Int int
 type API int
 
-type Cuenta struct {
-	mutex sync.RWMutex
-	valor Int
-}
-
-var cuenta = Cuenta{valor: 0}
-
-var ip string
-var puertorpc string
-
-func main() {
-
+func ServidorRCP() {
+	// variables de servidor
 	ip := "localhost"
 	puertorpc := "9001"
 
@@ -52,55 +39,31 @@ func main() {
 	if err != nil {
 		log.Fatal("Counter: error sirviendo: ", err)
 	}
-
 }
 
-// Procedimientos para contador global
-// funcion que aumenta o disminuye el contador global dado un numero
-func (c *Cuenta) Aumentar(num Int) {
-	c.mutex.Lock()
-	c.valor = c.valor + num
-	c.mutex.Unlock()
-}
-
-// funcion que establece el valor del contador global en cero
-func (c *Cuenta) Reset() {
-	c.mutex.Lock()
-	c.valor = 0
-	c.mutex.Unlock()
-}
-
-// funcion que devuelve el valor del contador global
-func (c *Cuenta) Obtener() Int {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	return c.valor
-}
-
-// Procedimientos remotos
 // Devuelve el valor del contador
-func (a *API) Valor(n Int, resp *Int) error {
+func (a *API) Valor(n int, resp *int) error {
 	log.Println("Counter: Ejecutando procedure consultar")
 
-	*resp = cuenta.Obtener()
+	*resp = cont.Contador.Obtener()
 
 	return nil
 }
 
 // Aumenta el contador por n y devuelve el nuevo valor del contador
-func (a *API) Aumentar(n Int, resp *Int) error {
+func (a *API) Aumentar(n int, resp *int) error {
 	log.Println("Counter: Ejecutando procedure aumentar")
-	cuenta.Aumentar(n)
-	*resp = cuenta.Obtener()
+	cont.Contador.Aumentar(n)
+	*resp = cont.Contador.Obtener()
 
 	return nil
 }
 
 //Resetea el contador, no hace nada con n y devuelve el nuevo valor
-func (a *API) Reset(n Int, resp *Int) error {
+func (a *API) Reset(n int, resp *int) error {
 	log.Println("Counter: Ejecutando procedure resetar")
-	cuenta.Reset()
-	*resp = cuenta.Obtener()
+	cont.Contador.Reset()
+	*resp = cont.Contador.Obtener()
 
 	return nil
 }

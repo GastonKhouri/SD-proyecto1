@@ -3,15 +3,18 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"net/rpc"
+	"strconv"
 	"sync"
 )
 
-type Int int
 type API int
+
+type Int int
 
 type Cuenta struct {
 	mutex sync.RWMutex
@@ -20,11 +23,38 @@ type Cuenta struct {
 
 var cuenta = Cuenta{valor: 0}
 
-var ip string
-var puertorpc string
-
 func main() {
 
+	go ServidorRCP()
+
+	fmt.Print("\nConsola local\n")
+	fmt.Print("\nIngrese un numero para aumentar o disminuir el contador")
+	fmt.Print("\nIngrese la letra [r] para resetear el contador a cero")
+	fmt.Print("\nIngrese la letra [p] para ver los procesos en ejecucion\n")
+
+	var entrada string
+
+	for {
+		fmt.Printf("\n Contador: %d\n Entrada: ", cuenta.Obtener())
+		fmt.Scan(&entrada)
+
+		if i, err := strconv.Atoi(entrada); err != nil {
+			//No es un int, revisa si es reset
+			if entrada == "r" {
+				cuenta.Reset()
+			} else if entrada == "p" {
+				// Es una llamada a ver los procesos
+			} else {
+				fmt.Println("Ingrese un numero entero o 'r'")
+			}
+		} else {
+			cuenta.Aumentar(Int(i))
+		}
+	}
+}
+
+func ServidorRCP() {
+	// variables de servidor
 	ip := "localhost"
 	puertorpc := "9001"
 
@@ -52,7 +82,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Counter: error sirviendo: ", err)
 	}
-
 }
 
 // Procedimientos para contador global
