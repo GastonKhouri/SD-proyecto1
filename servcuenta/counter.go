@@ -43,7 +43,7 @@ func main() {
 			if entrada == "r" {
 				cuenta.Reset()
 			} else if entrada == "p" {
-				// Es una llamada a ver los procesos
+				//Lista de procesos para filtrar
 			} else {
 				fmt.Println("Ingrese un numero entero o 'r'")
 			}
@@ -82,6 +82,9 @@ func ServidorRCP() {
 	if err != nil {
 		log.Fatal("Counter: error sirviendo: ", err)
 	}
+
+	// se asegura de cerrar el servidor al finalizar
+	defer ls.Close()
 }
 
 // Procedimientos para contador global
