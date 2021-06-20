@@ -3,10 +3,10 @@
 package main
 
 import (
-	"fcont"
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -23,8 +23,29 @@ func main() {
 
 	for {
 
+		var entrada string
+
 		//Pedir entrada hasta que se ingrese un entero o 'r'
-		entrada := fcont.ChequearEntrada()
+		for {
+			fmt.Scanln(&entrada)
+
+			if _, err := strconv.Atoi(entrada); err != nil {
+				//No es un int, revisa si es reset
+				if entrada == "r" {
+					// Es un reset
+					break
+				} else if entrada == "p" {
+					// Es una llamada a ver los procesos
+					break
+				} else {
+					fmt.Println("Ingrese un numero entero o 'r'")
+				}
+			} else {
+				// Es un int
+				break
+			}
+
+		}
 
 		//Llamar al servidor
 		conn, err := net.DialUDP("udp4", nil, udpAddr)

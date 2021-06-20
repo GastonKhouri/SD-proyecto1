@@ -6,10 +6,10 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/gob"
-	"fcont"
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -22,8 +22,29 @@ func main() {
 
 	for {
 
-		//Pedir entrada hasta que se ingrese una entrada valida
-		entrada := fcont.ChequearEntrada()
+		var entrada string
+
+		//Pedir entrada hasta que se ingrese un entero o 'r'
+		for {
+			fmt.Scanln(&entrada)
+
+			if _, err := strconv.Atoi(entrada); err != nil {
+				//No es un int, revisa si es reset
+				if entrada == "r" {
+					// Es un reset
+					break
+				} else if entrada == "p" {
+					// Es una llamada a ver los procesos
+					break
+				} else {
+					fmt.Println("Ingrese un numero entero o 'r'")
+				}
+			} else {
+				// Es un int
+				break
+			}
+
+		}
 
 		//Encodear la entrada valida
 		enc := gob.NewEncoder(buf)
