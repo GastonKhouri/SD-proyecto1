@@ -43,7 +43,9 @@ func main() {
 			if entrada == "r" {
 				cuenta.Reset()
 			} else if entrada == "p" {
+
 				//Lista de procesos para filtrar
+
 			} else {
 				fmt.Println("Ingrese un numero entero o 'r'")
 			}
@@ -66,7 +68,6 @@ func ServidorRCP() {
 		log.Fatal("Counter: error registering API. ", err)
 	}
 
-	//?
 	rpc.HandleHTTP()
 
 	//Escuchar por conexion
@@ -77,7 +78,7 @@ func ServidorRCP() {
 	}
 
 	//Imprimir que se esta sirviendo y en cual puerto
-	log.Printf("Counter: sirviendo RPC en puerto %s", puertorpc)
+	log.Printf("Counter: sirviendo RPC en:  %s:%s", ip, puertorpc)
 	err = http.Serve(ls, nil)
 	if err != nil {
 		log.Fatal("Counter: error sirviendo: ", err)
