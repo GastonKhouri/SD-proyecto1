@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/rpc"
 	"strconv"
+	"time"
 
 	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/process"
@@ -48,12 +49,12 @@ func aceptarRequest(p chan (bool), canalConexion chan (net.Conn), ln net.Listene
 
 func enviarReqAContador(p chan (bool), canalConexion chan (net.Conn), puertorpc string) {
 	for {
-		// time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 10)
 		if len(cola) != 0 {
-			// fmt.Println("----- COLA ACTUAL -----")
-			// for i := 0; i < len(cola); i++ {
-			// 	fmt.Printf("Addr: %s - Entrada: %s\n", cola[i].conn.LocalAddr(), cola[i].num)
-			// }
+			fmt.Println("----- COLA ACTUAL -----")
+			for i := 0; i < len(cola); i++ {
+				fmt.Printf("Addr: %s - Entrada: %s\n", cola[i].conn.LocalAddr(), cola[i].num)
+			}
 			llamarRPC(puertorpc)
 		}
 	}
@@ -81,7 +82,7 @@ func llamarRPC(ps string) {
 
 		//Lista de procesos para filtrar
 		listaDeProcesos := ([]string{"counter", "colatcp", "manejarContador", "servertcphilos", "servertcpproc", "serverudp",
-			"clientudp", "clienttcpproc", "clienttcphilos"})
+			"clientudp", "clienttcpproc", "clienttcphilos", "clienterpc"})
 
 		miscStat, _ := load.Misc()
 		log.Printf("No. procesos corriendo: %d\n", miscStat.ProcsRunning)

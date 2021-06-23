@@ -10,7 +10,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"net/rpc"
 )
 
 //Tipo necesario para hacer los rpc
@@ -21,59 +20,10 @@ var ip string
 var puertotcp string
 var puertorpc string
 
-//Funciones para llamar los RPC
-func manejarAumento(conn net.Conn, n int32, puerto string) {
-
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Server TCP Hilos: Error de conexión: ", err)
-	}
-
-	client.Call("API.Aumentar", n, &resp)
-	log.Println(fmt.Sprintf("Server TCP Hilos: Hice una llamada para aumentar y devolvió %d", resp))
-	io.WriteString(conn, fmt.Sprintf("Hice una llamada para aumentar y devolvió %d \n", resp))
-	client.Close()
-
-}
-
-func manejarValor(conn net.Conn, puerto string) {
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Server TCP Hilos: Error de conexión: ", err)
-	}
-
-	client.Call("API.Valor", 0, &resp)
-	log.Println(fmt.Sprintf("Server TCP Hilos: El valor actual es: %d", resp))
-	io.WriteString(conn, fmt.Sprintf("El valor actual es: %d \n", resp))
-	client.Close()
-}
-
-func manejarReseteo(conn net.Conn, puerto string) {
-	var resp Int
-
-	client, err := rpc.DialHTTP("tcp", ip+":"+puerto)
-
-	if err != nil {
-		log.Fatal("Server TCP Hilos: Error de conexión", err)
-	}
-
-	client.Call("API.Reset", 0, &resp)
-	log.Println(fmt.Sprintf("Server TCP Hilos: Contador reseteado. Valor actual: %d", resp))
-	io.WriteString(conn, fmt.Sprintf(" Contador reseteado. Valor actual: %d \n", resp))
-	client.Close()
-}
-
 func main() {
 
 	ip := "localhost"
 	puertotcp := "2020"
-	puertosalida := "9000"
 
 	//Escuchar un request
 	ln, err := net.Listen("tcp", ip+":"+puertotcp)
@@ -83,8 +33,20 @@ func main() {
 
 	//Asegura que se cierre cuando termine la conexion
 	defer ln.Close()
+
+	log.Println("Entrando a go")
+	go escuchar(ln)
+	for {
+	}
+
+}
+
+func escuchar(ln net.Listener) {
+	ip := "localhost"
+	puertosalida := "9000"
 	var entrada string
 	buf := new(bytes.Buffer)
+	log.Println("ESCUCHANDO")
 
 	for {
 		//Recibir un request
@@ -110,7 +72,7 @@ func main() {
 		}
 
 		//Llamar a la cola
-		log.Println("Server TCP Hilos: Llamado a cola en:", ip+":"+puertosalida)
+		log.Println("Server TCP Hilos: Llamado a cola en:", "localhost:9000")
 		conns, err := net.Dial("tcp", ip+":"+puertosalida)
 		if err != nil {
 			log.Println("Server TCP Hilos: Error en dial: ", err)
@@ -118,6 +80,7 @@ func main() {
 
 		// Escribir a la cola
 		buf.WriteTo(conns)
+		go escuchar(ln)
 
 		//Lee la conexion y la imprime
 		resp, err := bufio.NewReader(conns).ReadString('\n')

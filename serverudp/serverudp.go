@@ -54,6 +54,7 @@ func handleUDPConnection(conne *net.UDPConn) {
 
 	// Escribir a la cola
 	buf.WriteTo(conns)
+	handleUDPConnection(conne)
 
 	//Lee la conexion y la imprime
 	resp, err := bufio.NewReader(conns).ReadString('\n')
