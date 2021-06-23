@@ -26,8 +26,7 @@ func main() {
 	var reply Int
 
 	fmt.Print("\nIngrese un numero para aumentar o disminuir el contador")
-	fmt.Print("\nIngrese la letra [r] para resetear el contador a cero")
-	fmt.Print("\nIngrese la letra [p] para ver los procesos en ejecucion\n")
+	fmt.Print("\nIngrese la letra [r] para resetear el contador a cero\n")
 
 	error = conn.Call("API.Valor", 0, &reply)
 	if error != nil {
@@ -47,8 +46,6 @@ func main() {
 				if error != nil {
 					log.Fatal("Error:", error)
 				}
-			} else if entrada == "p" {
-				// Es una llamada a ver los procesos
 			} else {
 				fmt.Println("Ingrese un numero entero o 'r'")
 			}
