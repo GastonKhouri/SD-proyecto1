@@ -29,19 +29,20 @@ func main() {
 
 	fmt.Print("\nConsola local\n")
 	fmt.Print("\nIngrese un numero para aumentar o disminuir el contador")
-	fmt.Print("\nIngrese la letra [r] para resetear el contador a cero")
-	fmt.Print("\nIngrese la letra [p] para ver los procesos en ejecucion\n")
+	fmt.Print("\nIngrese la letra [r] para resetear el contador a cero\n")
 
 	var entrada string
 
+	fmt.Printf("\n Contador Actual: %d\n", cuenta.Obtener())
+
 	for {
-		fmt.Printf("\n Contador: %d\n Entrada: ", cuenta.Obtener())
 		fmt.Scan(&entrada)
 
 		if i, err := strconv.Atoi(entrada); err != nil {
 			//No es un int, revisa si es reset
 			if entrada == "r" {
 				cuenta.Reset()
+				fmt.Printf("Hice una llamada para resetear y devolvio: %d\n", cuenta.Obtener())
 			} else if entrada == "p" {
 
 				//Lista de procesos para filtrar
@@ -51,6 +52,8 @@ func main() {
 			}
 		} else {
 			cuenta.Aumentar(Int(i))
+			fmt.Printf("Hice una llamada para aumentar y devolvio: %d\n", cuenta.Obtener())
+
 		}
 	}
 }

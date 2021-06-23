@@ -33,10 +33,11 @@ func main() {
 		log.Fatal("Error:", error)
 	}
 
+	fmt.Printf("Contador actual: %d\n", reply)
+
 	var entrada string
 
 	for {
-		fmt.Printf("\n Contador: %d\n Entrada: ", reply)
 		fmt.Scan(&entrada)
 
 		if i, err := strconv.Atoi(entrada); err != nil {
@@ -46,6 +47,7 @@ func main() {
 				if error != nil {
 					log.Fatal("Error:", error)
 				}
+				fmt.Printf("Hice una llamada para resetear y devolvio: %d\n", reply)
 			} else {
 				fmt.Println("Ingrese un numero entero o 'r'")
 			}
@@ -54,6 +56,7 @@ func main() {
 			if error != nil {
 				log.Fatal("Error:", error)
 			}
+			fmt.Printf("Hice una llamada para aumentar y devolvio: %d\n", reply)
 		}
 	}
 }
